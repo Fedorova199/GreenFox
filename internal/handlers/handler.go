@@ -147,7 +147,6 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	return
 }
 
 func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
@@ -309,5 +308,4 @@ func (h *Handler) Withdraw(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	return
 }

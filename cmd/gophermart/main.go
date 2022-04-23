@@ -24,7 +24,7 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	db, err := sql.Open("pgx", cfg.DATABASE_URI)
+	db, err := sql.Open("pgx", cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -38,7 +38,7 @@ func main() {
 	orderRepository := storage.CreateOrderRepository(db)
 	withdrawalRepository := storage.CreateWithdrawalRepository(db)
 	cookieAuthenticator := service.NewCookieAuthenticator([]byte(cfg.SecretKey))
-	pointAccrualService := service.NewPointAccrualService(cfg.ACCRUAL_SYSTEM_ADDRESS, orderRepository)
+	pointAccrualService := service.NewPointAccrualService(cfg.AccrualSystemAddress, orderRepository)
 	pointAccrualService.Start()
 	authenticator := middleware.NewAuthenticator(cookieAuthenticator)
 
@@ -48,7 +48,7 @@ func main() {
 	}
 
 	handler := handlers.NewHandler(
-		cfg.ACCRUAL_SYSTEM_ADDRESS,
+		cfg.AccrualSystemAddress,
 		userRepository,
 		orderRepository,
 		withdrawalRepository,
@@ -58,7 +58,7 @@ func main() {
 		mws,
 	)
 	server := &http.Server{
-		Addr:    cfg.RUN_ADDRESS,
+		Addr:    cfg.RunAddress,
 		Handler: handler,
 	}
 
