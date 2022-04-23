@@ -72,7 +72,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if service.Hash(credentials.Password) != user.PasswordHash {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, "invalid password", http.StatusUnauthorized)
 		return
 	}
 
