@@ -10,21 +10,27 @@ import (
 	"github.com/Fedorova199/GreenFox/internal/models"
 )
 
-type OrderRepository interface {
+type Order interface {
+	GetByNumber(ctx context.Context, number string) (models.Order, error)
 	UpdateAccrualStatus(ctx context.Context, accrual models.Accrual) error
 }
 
+type User interface {
+	IncreaseBalanceByUserID(ctx context.Context, userID uint64, amount float64) error
+}
 type PointAccrualService struct {
 	orders               chan string
 	accrualSystemAddress string
-	orderRepository      OrderRepository
+	order                Order
+	user                 User
 }
 
-func NewPointAccrualService(accrualSystemAddress string, orderRepository OrderRepository) *PointAccrualService {
+func NewPointAccrualService(accrualSystemAddress string, order Order, user User) *PointAccrualService {
 	return &PointAccrualService{
 		orders:               make(chan string, 100),
 		accrualSystemAddress: accrualSystemAddress,
-		orderRepository:      orderRepository,
+		order:                order,
+		user:                 user,
 	}
 }
 
@@ -59,10 +65,21 @@ func (s *PointAccrualService) handleOrder(order string) error {
 			return err
 		}
 
-		err = s.orderRepository.UpdateAccrualStatus(context.Background(), accrual)
+		order, err := s.order.GetByNumber(context.Background(), accrual.Order)
 		if err != nil {
 			return err
 		}
+
+		err = s.order.UpdateAccrualStatus(context.Background(), accrual)
+		if err != nil {
+			return err
+		}
+
+		err = s.user.IncreaseBalanceByUserID(context.Background(), order.UserID, accrual.Accrual)
+		if err != nil {
+			return err
+		}
+
 	case http.StatusTooManyRequests:
 		s.Accrue(order)
 	case http.StatusInternalServerError:

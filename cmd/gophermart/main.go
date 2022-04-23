@@ -34,11 +34,11 @@ func main() {
 		log.Fatalf("could not ping DB... %v", err)
 	}
 
-	userRepository := storage.CreateUser(db)
-	orderRepository := storage.CreateOrderRepository(db)
-	withdrawalRepository := storage.CreateWithdrawalRepository(db)
+	user := storage.CreateUser(db)
+	order := storage.CreateOrderRepository(db)
+	withdrawal := storage.CreateWithdrawalRepository(db)
 	cookieAuthenticator := service.NewCookieAuthenticator([]byte(cfg.SecretKey))
-	pointAccrualService := service.NewPointAccrualService(cfg.AccrualSystemAddress, orderRepository)
+	pointAccrualService := service.NewPointAccrualService(cfg.AccrualSystemAddress, order, user)
 	pointAccrualService.Start()
 	authenticator := middleware.NewAuthenticator(cookieAuthenticator)
 
@@ -49,9 +49,9 @@ func main() {
 
 	handler := handlers.NewHandler(
 		cfg.AccrualSystemAddress,
-		userRepository,
-		orderRepository,
-		withdrawalRepository,
+		user,
+		order,
+		withdrawal,
 		cookieAuthenticator,
 		pointAccrualService,
 		authenticator,
