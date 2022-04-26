@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 
 	"log"
 	"net/http"
@@ -15,7 +16,10 @@ import (
 	middleware "github.com/Fedorova199/GreenFox/internal/middlewares"
 	"github.com/Fedorova199/GreenFox/internal/service"
 	"github.com/Fedorova199/GreenFox/internal/storage"
+	"github.com/golang-migrate/migrate"
+	"github.com/golang-migrate/migrate/database/postgres"
 
+	_ "github.com/golang-migrate/migrate/source/file"
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
@@ -26,7 +30,7 @@ func main() {
 	}
 	db, err := sql.Open("pgx", cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 	defer db.Close()
 
@@ -34,11 +38,26 @@ func main() {
 		log.Fatalf("could not ping DB... %v", err)
 	}
 
-	user := storage.CreateUser(db)
-	order := storage.CreateOrderRepository(db)
-	withdrawal := storage.CreateWithdrawalRepository(db)
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		log.Fatalf("could not start sql migration... %v", err)
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(fmt.Sprintf("file://%s", cfg.MigrationDir), "product", driver)
+	if err != nil {
+		log.Fatalf("migration failed... %v", err)
+	}
+
+	fmt.Println(m.Version())
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("An error occurred while syncing the database.. %v", err)
+	}
+
+	userRepository := storage.CreateUser(db)
+	orderRepository := storage.CreateOrder(db)
+	withdrawalRepository := storage.CreateWithdrawal(db)
 	cookieAuthenticator := service.NewCookieAuthenticator([]byte(cfg.SecretKey))
-	pointAccrualService := service.NewPointAccrualService(cfg.AccrualSystemAddress, order, user)
+	pointAccrualService := service.NewPointAccrualService(cfg.AccrualSystemAddress, orderRepository)
 	pointAccrualService.Start()
 	authenticator := middleware.NewAuthenticator(cookieAuthenticator)
 
@@ -49,9 +68,9 @@ func main() {
 
 	handler := handlers.NewHandler(
 		cfg.AccrualSystemAddress,
-		user,
-		order,
-		withdrawal,
+		userRepository,
+		orderRepository,
+		withdrawalRepository,
 		cookieAuthenticator,
 		pointAccrualService,
 		authenticator,

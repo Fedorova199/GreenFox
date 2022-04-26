@@ -9,15 +9,17 @@ import (
 type Config struct {
 	RunAddress           string `env:"RUN_ADDRESS" envDefault:":8080"`
 	AccrualSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS"`
-	DatabaseURL          string `env:"DATABASE_URI" envDefault:"postgresql://localhost:5432/test_db?user=postgres&password=password"`
+	DatabaseURL          string `env:"DATABASE_URI" envDefault:"postgresql://localhost:5432/product?user=postgres&password=password"`
 	SecretKey            string
+	MigrationDir         string
 }
 
 const (
 	defaultServerAddress = ":8080"
 	defaultAccrualAdd    = ""
-	defaultDB            = "postgresql://localhost:5432/test_db?user=postgres&password=password"
-	defaultSecretKey     = "Secret_Key"
+	defaultDB            = "postgresql://localhost:5432/product?user=postgres&password=password"
+	defaultSecretKey     = "SecretKey"
+	defaultmigration     = "./migrations"
 )
 
 var defaultConfig = Config{
@@ -46,6 +48,7 @@ func (conf *Config) parseFlags() {
 }
 
 func (conf *Config) parseEnvVars() {
+
 	ra := os.Getenv("RUN_ADDRESS")
 	if ra != "" {
 		conf.RunAddress = ra

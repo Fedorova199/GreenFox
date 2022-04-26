@@ -6,13 +6,12 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"sort"
-	"strconv"
 	"time"
 
 	"github.com/Fedorova199/GreenFox/internal/models"
+	"github.com/Fedorova199/GreenFox/internal/storage"
+
 	"github.com/Fedorova199/GreenFox/internal/service"
-	"github.com/theplant/luhn"
 )
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
@@ -86,13 +85,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	login, err := h.cookieAuthenticator.GetLogin(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	user, err := h.user.GetByLogin(r.Context(), login)
+	user, err := h.getAuthUser(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -104,18 +97,13 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	numberInt, err := strconv.Atoi(string(b))
+	number := string(b)
+	err = service.CheckOrderNumber(number)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	if !luhn.Valid(numberInt) {
-		http.Error(w, "invalid order number", http.StatusUnprocessableEntity)
-		return
-	}
-
-	number := strconv.Itoa(numberInt)
 	newOrder := models.Order{
 		Number:     number,
 		Status:     models.NEW,
@@ -150,13 +138,7 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
-	login, err := h.cookieAuthenticator.GetLogin(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	user, err := h.user.GetByLogin(r.Context(), login)
+	user, err := h.getAuthUser(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -173,10 +155,6 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	sort.Slice(orders, func(i, j int) bool {
-		return orders[i].UploadedAt.Before(orders[j].UploadedAt)
-	})
-
 	res, err := json.Marshal(orders)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -189,13 +167,7 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
-	login, err := h.cookieAuthenticator.GetLogin(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	user, err := h.user.GetByLogin(r.Context(), login)
+	user, err := h.getAuthUser(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -213,13 +185,7 @@ func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
-	login, err := h.cookieAuthenticator.GetLogin(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	user, err := h.user.GetByLogin(r.Context(), login)
+	user, err := h.getAuthUser(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -236,10 +202,6 @@ func (h *Handler) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	sort.Slice(withdrawals, func(i, j int) bool {
-		return withdrawals[i].ProcessedAt.Before(withdrawals[j].ProcessedAt)
-	})
-
 	res, err := json.Marshal(withdrawals)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -252,13 +214,7 @@ func (h *Handler) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Withdraw(w http.ResponseWriter, r *http.Request) {
-	login, err := h.cookieAuthenticator.GetLogin(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	user, err := h.user.GetByLogin(r.Context(), login)
+	user, err := h.getAuthUser(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -270,39 +226,28 @@ func (h *Handler) Withdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var withdrawal models.Withdrawal
+	withdrawal := &models.Withdrawal{
+		ProcessedAt: time.Now(),
+		UserID:      user.ID,
+	}
 	err = json.Unmarshal(b, &withdrawal)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	orderInt, err := strconv.Atoi(withdrawal.Order)
+	err = service.CheckOrderNumber(withdrawal.Order)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
-	if !luhn.Valid(orderInt) {
-		http.Error(w, "invalid order number", http.StatusUnprocessableEntity)
-		return
-	}
-
-	if user.Balance < withdrawal.Sum {
-		http.Error(w, "insufficient balance", http.StatusPaymentRequired)
-		return
-	}
-
-	err = h.user.DecreaseBalanceByUserID(r.Context(), user.ID, withdrawal.Sum)
+	err = h.withdrawal.Create(r.Context(), *withdrawal)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	withdrawal.ProcessedAt = time.Now()
-	withdrawal.UserID = user.ID
-	err = h.withdrawal.Create(r.Context(), withdrawal)
-	if err != nil {
+		if errors.As(err, &storage.ErrInsufficientBalance) {
+			http.Error(w, "insufficient balance", http.StatusPaymentRequired)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -12,25 +12,23 @@ import (
 
 type Order interface {
 	GetByNumber(ctx context.Context, number string) (models.Order, error)
-	UpdateAccrualStatus(ctx context.Context, accrual models.Accrual) error
+	UpdateAccrual(ctx context.Context, accrual models.Accrual) error
 }
 
-type User interface {
-	IncreaseBalanceByUserID(ctx context.Context, userID uint64, amount float64) error
-}
 type PointAccrualService struct {
 	orders               chan string
 	accrualSystemAddress string
 	order                Order
-	user                 User
 }
 
-func NewPointAccrualService(accrualSystemAddress string, order Order, user User) *PointAccrualService {
+func NewPointAccrualService(
+	accrualSystemAddress string,
+	order Order,
+) *PointAccrualService {
 	return &PointAccrualService{
 		orders:               make(chan string, 100),
 		accrualSystemAddress: accrualSystemAddress,
 		order:                order,
-		user:                 user,
 	}
 }
 
@@ -65,21 +63,10 @@ func (s *PointAccrualService) handleOrder(order string) error {
 			return err
 		}
 
-		order, err := s.order.GetByNumber(context.Background(), accrual.Order)
+		err = s.order.UpdateAccrual(context.Background(), accrual)
 		if err != nil {
 			return err
 		}
-
-		err = s.order.UpdateAccrualStatus(context.Background(), accrual)
-		if err != nil {
-			return err
-		}
-
-		err = s.user.IncreaseBalanceByUserID(context.Background(), order.UserID, accrual.Accrual)
-		if err != nil {
-			return err
-		}
-
 	case http.StatusTooManyRequests:
 		s.Accrue(order)
 	case http.StatusInternalServerError:

@@ -1,11 +1,16 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 )
 
+type ContextKey string
+
+const ContextLoginKey ContextKey = "loginKey"
+
 type CookieAuthenticatorChecker interface {
-	Check(r *http.Request) error
+	GetLogin(r *http.Request) (string, error)
 }
 
 type Authenticator struct {
@@ -18,12 +23,13 @@ func NewAuthenticator(cookieAuthenticator CookieAuthenticatorChecker) *Authentic
 
 func (a Authenticator) Handle(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := a.cookieAuthenticator.Check(r)
+		login, err := a.cookieAuthenticator.GetLogin(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		ctx := context.WithValue(r.Context(), ContextLoginKey, login)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }

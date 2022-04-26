@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/Fedorova199/GreenFox/internal/interfaces"
+	"github.com/Fedorova199/GreenFox/internal/models"
+	"github.com/Fedorova199/GreenFox/internal/service"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -36,7 +39,6 @@ func NewHandler(
 		withdrawal:          withdrawal,
 		cookieAuthenticator: cookieAuthenticator,
 		pointAccrualService: pointAccrualService,
-		authenticator:       authenticator,
 	}
 
 	h.Post("/api/user/register", Middlewares(h.Register, middlewares))
@@ -57,4 +59,18 @@ func Middlewares(handler http.HandlerFunc, middlewares []interfaces.Middleware) 
 	}
 
 	return handler
+}
+
+func (h *Handler) getAuthUser(r *http.Request) (models.User, error) {
+	login, ok := service.LoginFromContext(r.Context())
+	if !ok {
+		return models.User{}, errors.New("unauthorized")
+	}
+
+	user, err := h.user.GetByLogin(r.Context(), login)
+	if err != nil {
+		return models.User{}, err
+	}
+
+	return user, nil
 }

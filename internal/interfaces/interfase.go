@@ -10,7 +10,6 @@ import (
 type User interface {
 	Create(ctx context.Context, user models.User) error
 	GetByLogin(ctx context.Context, login string) (models.User, error)
-	DecreaseBalanceByUserID(ctx context.Context, userID uint64, amount float64) error
 }
 
 type Order interface {
@@ -25,7 +24,6 @@ type Withdrawal interface {
 }
 
 type CookieAuthenticator interface {
-	GetLogin(r *http.Request) (string, error)
 	SetCookie(w http.ResponseWriter, login string) error
 }
 
