@@ -25,7 +25,7 @@ import (
 
 func main() {
 	cfg := config.ParseVariables()
-	db, err := sql.Open("pgx", cfg.DatabasURl)
+	db, err := sql.Open("pgx", cfg.DatabasURL)
 	if err != nil {
 		log.Fatal(err)
 	}
