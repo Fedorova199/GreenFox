@@ -24,11 +24,8 @@ import (
 )
 
 func main() {
-	cfg, err := config.NewConfig()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	db, err := sql.Open("pgx", cfg.DatabaseURL)
+	cfg := config.ParseVariables()
+	db, err := sql.Open("pgx", cfg.DatabasURl)
 	if err != nil {
 		log.Fatal(err)
 	}
