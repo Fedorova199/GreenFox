@@ -28,7 +28,12 @@ func (r *Withdrawal) Create(ctx context.Context, withdrawal models.Withdrawal) e
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+	}()
 
 	var balance float64
 	row := tx.QueryRowContext(ctx, `SELECT balance FROM "user" WHERE id = $1`, withdrawal.UserID)
