@@ -13,17 +13,22 @@ var (
 	ErrInsufficientBalance = errors.New("insufficient balance")
 )
 
-type Withdrawal struct {
+type Withdrawal interface {
+	Create(ctx context.Context, withdrawal models.Withdrawal) error
+	GetByUserID(ctx context.Context, userID uint64) ([]models.Withdrawal, error)
+}
+
+type WithdrawalDB struct {
 	db *sql.DB
 }
 
-func CreateWithdrawal(db *sql.DB) *Withdrawal {
-	return &Withdrawal{
+func CreateWithdrawal(db *sql.DB) *WithdrawalDB {
+	return &WithdrawalDB{
 		db: db,
 	}
 }
 
-func (r *Withdrawal) Create(ctx context.Context, withdrawal models.Withdrawal) error {
+func (r *WithdrawalDB) Create(ctx context.Context, withdrawal models.Withdrawal) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -61,7 +66,7 @@ func (r *Withdrawal) Create(ctx context.Context, withdrawal models.Withdrawal) e
 	return tx.Commit()
 }
 
-func (r *Withdrawal) GetByUserID(ctx context.Context, userID uint64) ([]models.Withdrawal, error) {
+func (r *WithdrawalDB) GetByUserID(ctx context.Context, userID uint64) ([]models.Withdrawal, error) {
 	var withdrawals []models.Withdrawal
 
 	rows, err := r.db.QueryContext(ctx, `SELECT id, "order", sum, processed_at, user_id FROM withdrawal WHERE user_id = $1`, userID)

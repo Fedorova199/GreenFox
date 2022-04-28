@@ -1,4 +1,4 @@
-package service
+package authenticator
 
 import (
 	"context"
@@ -8,22 +8,27 @@ import (
 	"net/http"
 
 	"github.com/Fedorova199/GreenFox/internal/models"
+	"github.com/Fedorova199/GreenFox/internal/storage"
 )
 
-type Order interface {
-	GetByNumber(ctx context.Context, number string) (models.Order, error)
-	UpdateAccrual(ctx context.Context, accrual models.Accrual) error
+// type Order interface {
+// 	GetByNumber(ctx context.Context, number string) (models.Order, error)
+// 	UpdateAccrual(ctx context.Context, accrual models.Accrual) error
+// }
+
+type PointAccrual interface {
+	Accrue(order string)
 }
 
 type PointAccrualService struct {
 	orders               chan string
 	accrualSystemAddress string
-	order                Order
+	order                storage.Order
 }
 
 func NewPointAccrualService(
 	accrualSystemAddress string,
-	order Order,
+	order storage.Order,
 ) *PointAccrualService {
 	return &PointAccrualService{
 		orders:               make(chan string, 100),

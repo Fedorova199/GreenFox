@@ -4,32 +4,36 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/Fedorova199/GreenFox/internal/interfaces"
+	"github.com/Fedorova199/GreenFox/internal/authenticator"
 	"github.com/Fedorova199/GreenFox/internal/models"
-	"github.com/Fedorova199/GreenFox/internal/service"
+	"github.com/Fedorova199/GreenFox/internal/storage"
 	"github.com/go-chi/chi/v5"
 )
+
+type Middleware interface {
+	Handle(next http.HandlerFunc) http.HandlerFunc
+}
 
 type Handler struct {
 	*chi.Mux
 	baseURL             string
-	user                interfaces.User
-	order               interfaces.Order
-	withdrawal          interfaces.Withdrawal
-	cookieAuthenticator interfaces.CookieAuthenticator
-	pointAccrualService interfaces.PointAccrualService
-	authenticator       interfaces.Middleware
+	user                storage.User
+	order               storage.Order
+	withdrawal          storage.Withdrawal
+	cookieAuthenticator authenticator.CookieAuth
+	pointAccrualService authenticator.PointAccrual
+	authenticator       Middleware
 }
 
 func NewHandler(
 	baseURL string,
-	user interfaces.User,
-	order interfaces.Order,
-	withdrawal interfaces.Withdrawal,
-	cookieAuthenticator interfaces.CookieAuthenticator,
-	pointAccrualService interfaces.PointAccrualService,
-	authenticator interfaces.Middleware,
-	middlewares []interfaces.Middleware,
+	user storage.User,
+	order storage.Order,
+	withdrawal storage.Withdrawal,
+	cookieAuthenticator authenticator.CookieAuth,
+	pointAccrualService authenticator.PointAccrual,
+	authenticator Middleware,
+	middlewares []Middleware,
 ) *Handler {
 	h := &Handler{
 		Mux:                 chi.NewMux(),
@@ -53,7 +57,7 @@ func NewHandler(
 	return h
 }
 
-func Middlewares(handler http.HandlerFunc, middlewares []interfaces.Middleware) http.HandlerFunc {
+func Middlewares(handler http.HandlerFunc, middlewares []Middleware) http.HandlerFunc {
 	for _, middleware := range middlewares {
 		handler = middleware.Handle(handler)
 	}
@@ -62,7 +66,7 @@ func Middlewares(handler http.HandlerFunc, middlewares []interfaces.Middleware) 
 }
 
 func (h *Handler) getAuthUser(r *http.Request) (models.User, error) {
-	login, ok := service.LoginFromContext(r.Context())
+	login, ok := authenticator.LoginFromContext(r.Context())
 	if !ok {
 		return models.User{}, errors.New("unauthorized")
 	}

@@ -1,4 +1,4 @@
-package service
+package authenticator
 
 import (
 	"context"
@@ -14,6 +14,10 @@ import (
 	middleware "github.com/Fedorova199/GreenFox/internal/middlewares"
 	"github.com/theplant/luhn"
 )
+
+type CookieAuth interface {
+	SetCookie(w http.ResponseWriter, login string) error
+}
 
 type CookieAuthenticator struct {
 	secret []byte

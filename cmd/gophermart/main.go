@@ -12,7 +12,6 @@ import (
 
 	"github.com/Fedorova199/GreenFox/internal/config"
 	"github.com/Fedorova199/GreenFox/internal/handlers"
-	"github.com/Fedorova199/GreenFox/internal/interfaces"
 	middleware "github.com/Fedorova199/GreenFox/internal/middlewares"
 	"github.com/Fedorova199/GreenFox/internal/service"
 	"github.com/Fedorova199/GreenFox/internal/storage"
@@ -58,7 +57,7 @@ func main() {
 	pointAccrualService.Start()
 	authenticator := middleware.NewAuthenticator(cookieAuthenticator)
 
-	mws := []interfaces.Middleware{
+	mws := []handlers.Middleware{
 		middleware.GzipEncoder{},
 		middleware.GzipDecoder{},
 	}

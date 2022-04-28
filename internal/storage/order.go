@@ -8,23 +8,29 @@ import (
 	"github.com/Fedorova199/GreenFox/internal/models"
 )
 
-type Order struct {
+type Order interface {
+	Create(ctx context.Context, order models.Order) error
+	GetByUserID(ctx context.Context, userID uint64) ([]models.Order, error)
+	GetByNumber(ctx context.Context, number string) (models.Order, error)
+	UpdateAccrual(ctx context.Context, accrual models.Accrual) error
+}
+type OrderDB struct {
 	db *sql.DB
 }
 
-func CreateOrder(db *sql.DB) *Order {
-	return &Order{
+func CreateOrder(db *sql.DB) *OrderDB {
+	return &OrderDB{
 		db: db,
 	}
 }
 
-func (r *Order) Create(ctx context.Context, order models.Order) error {
+func (r *OrderDB) Create(ctx context.Context, order models.Order) error {
 	sqlStatement := `INSERT INTO "order" (number, status, uploaded_at, user_id) VALUES ($1, $2, $3, $4)`
 	_, err := r.db.ExecContext(ctx, sqlStatement, order.Number, order.Status, order.UploadedAt, order.UserID)
 	return err
 }
 
-func (r *Order) GetByUserID(ctx context.Context, userID uint64) ([]models.Order, error) {
+func (r *OrderDB) GetByUserID(ctx context.Context, userID uint64) ([]models.Order, error) {
 	var orders []models.Order
 
 	rows, err := r.db.QueryContext(ctx, `SELECT id, number, status, accrual, uploaded_at, user_id FROM "order" WHERE user_id = $1`, userID)
@@ -59,7 +65,7 @@ func (r *Order) GetByUserID(ctx context.Context, userID uint64) ([]models.Order,
 	return orders, nil
 }
 
-func (r *Order) GetByNumber(ctx context.Context, number string) (models.Order, error) {
+func (r *OrderDB) GetByNumber(ctx context.Context, number string) (models.Order, error) {
 	var order models.Order
 
 	sqlStatement := `SELECT id, number, status, accrual, uploaded_at, user_id FROM "order" WHERE number = $1`
@@ -72,7 +78,7 @@ func (r *Order) GetByNumber(ctx context.Context, number string) (models.Order, e
 	return order, nil
 }
 
-func (r *Order) UpdateAccrual(ctx context.Context, accrual models.Accrual) error {
+func (r *OrderDB) UpdateAccrual(ctx context.Context, accrual models.Accrual) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
