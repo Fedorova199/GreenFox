@@ -11,11 +11,6 @@ import (
 	"github.com/Fedorova199/GreenFox/internal/storage"
 )
 
-// type Order interface {
-// 	GetByNumber(ctx context.Context, number string) (models.Order, error)
-// 	UpdateAccrual(ctx context.Context, accrual models.Accrual) error
-// }
-
 type PointAccrual interface {
 	Accrue(order string)
 }

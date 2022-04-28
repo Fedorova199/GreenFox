@@ -10,10 +10,10 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/Fedorova199/GreenFox/internal/authenticator"
 	"github.com/Fedorova199/GreenFox/internal/config"
 	"github.com/Fedorova199/GreenFox/internal/handlers"
 	middleware "github.com/Fedorova199/GreenFox/internal/middlewares"
-	"github.com/Fedorova199/GreenFox/internal/service"
 	"github.com/Fedorova199/GreenFox/internal/storage"
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
@@ -52,8 +52,8 @@ func main() {
 	userRepository := storage.CreateUser(db)
 	orderRepository := storage.CreateOrder(db)
 	withdrawalRepository := storage.CreateWithdrawal(db)
-	cookieAuthenticator := service.NewCookieAuthenticator([]byte(cfg.SecretKey))
-	pointAccrualService := service.NewPointAccrualService(cfg.AccrualSystemAddress, orderRepository)
+	cookieAuthenticator := authenticator.NewCookieAuthenticator([]byte(cfg.SecretKey))
+	pointAccrualService := authenticator.NewPointAccrualService(cfg.AccrualSystemAddress, orderRepository)
 	pointAccrualService.Start()
 	authenticator := middleware.NewAuthenticator(cookieAuthenticator)
 

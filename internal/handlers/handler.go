@@ -8,10 +8,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Fedorova199/GreenFox/internal/authenticator"
 	"github.com/Fedorova199/GreenFox/internal/models"
 	"github.com/Fedorova199/GreenFox/internal/storage"
-
-	"github.com/Fedorova199/GreenFox/internal/service"
 )
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +34,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 
 	newUser := models.User{
 		Login:        credentials.Login,
-		PasswordHash: service.Hash(credentials.Password),
+		PasswordHash: authenticator.Hash(credentials.Password),
 	}
 
 	err = h.user.Create(r.Context(), newUser)
@@ -70,7 +69,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if service.Hash(credentials.Password) != user.PasswordHash {
+	if authenticator.Hash(credentials.Password) != user.PasswordHash {
 		http.Error(w, "invalid password", http.StatusUnauthorized)
 		return
 	}
@@ -98,7 +97,7 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	number := string(b)
-	err = service.CheckOrderNumber(number)
+	err = authenticator.CheckOrderNumber(number)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -236,7 +235,7 @@ func (h *Handler) Withdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = service.CheckOrderNumber(withdrawal.Order)
+	err = authenticator.CheckOrderNumber(withdrawal.Order)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
