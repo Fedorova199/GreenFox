@@ -8,5 +8,6 @@ require (
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/jackc/pgx/v4 v4.15.0
 	github.com/lib/pq v1.10.5 // indirect
+	github.com/stretchr/testify v1.7.1
 	github.com/theplant/luhn v0.0.0-20170224032821-81a1a381387a
 )
