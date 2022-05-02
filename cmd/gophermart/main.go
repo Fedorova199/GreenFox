@@ -15,6 +15,7 @@ import (
 	"github.com/Fedorova199/GreenFox/internal/handlers"
 	middleware "github.com/Fedorova199/GreenFox/internal/middlewares"
 	"github.com/Fedorova199/GreenFox/internal/storage"
+	"github.com/Fedorova199/GreenFox/internal/storage/logger"
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
 
@@ -23,10 +24,12 @@ import (
 )
 
 func main() {
+	logger.SetLevel("WARNING")
 	cfg := config.ParseVariables()
+	logger.Debugf("cfg: %v", cfg)
 	db, err := sql.Open("pgx", cfg.DatabasURL)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatalln(err)
 	}
 	defer db.Close()
 

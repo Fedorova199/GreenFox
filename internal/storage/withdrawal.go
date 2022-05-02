@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/Fedorova199/GreenFox/internal/models"
+	"github.com/Fedorova199/GreenFox/internal/storage/logger"
 )
 
 var (
@@ -35,6 +36,7 @@ func (r *WithdrawalDB) Create(ctx context.Context, withdrawal models.Withdrawal)
 	}
 	defer func() {
 		if err != nil {
+			logger.Warningf("transaction error: %v", err)
 			tx.Rollback()
 			return
 		}
@@ -46,7 +48,7 @@ func (r *WithdrawalDB) Create(ctx context.Context, withdrawal models.Withdrawal)
 	if err != nil {
 		return err
 	}
-
+	logger.Debugf("checking the balance: balance %v - required amount %v", balance, withdrawal.Sum)
 	if balance < withdrawal.Sum {
 		return ErrInsufficientBalance
 	}
@@ -62,7 +64,7 @@ func (r *WithdrawalDB) Create(ctx context.Context, withdrawal models.Withdrawal)
 	if err != nil {
 		return err
 	}
-
+	logger.Info(tx.Commit())
 	return tx.Commit()
 }
 

@@ -11,6 +11,7 @@ import (
 	"github.com/Fedorova199/GreenFox/internal/authenticator"
 	"github.com/Fedorova199/GreenFox/internal/models"
 	"github.com/Fedorova199/GreenFox/internal/storage"
+	"github.com/Fedorova199/GreenFox/internal/storage/logger"
 )
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +20,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	logger.Infof("new user: %s", b)
 	credentials := models.Credentials{}
 	if err := json.Unmarshal(b, &credentials); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -56,7 +57,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	logger.Infof("Register user: %s", b)
 	credentials := models.Credentials{}
 	if err := json.Unmarshal(b, &credentials); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -159,7 +160,7 @@ func (h *Handler) GetOrders(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	logger.Debug("handler - GetOrders - response - ", res)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(res)
@@ -177,7 +178,7 @@ func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	logger.Debug("handler - GetBalance - response - ", res)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(res)
@@ -206,7 +207,7 @@ func (h *Handler) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	logger.Debug("handler - GetWithdrawals - response - ", res)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(res)

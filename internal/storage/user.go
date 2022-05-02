@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/Fedorova199/GreenFox/internal/models"
+	"github.com/Fedorova199/GreenFox/internal/storage/logger"
 )
 
 type User interface {
@@ -29,7 +30,7 @@ func (r *UserDB) Create(ctx context.Context, user models.User) error {
 
 func (r *UserDB) GetByLogin(ctx context.Context, login string) (models.User, error) {
 	var user models.User
-
+	logger.Info("login:", login)
 	row := r.db.QueryRowContext(ctx, `SELECT id, login, password_hash, balance, withdrawn FROM "user" WHERE login = $1`, login)
 	err := row.Scan(&user.ID, &user.Login, &user.PasswordHash, &user.Balance, &user.Withdrawn)
 	if err != nil {

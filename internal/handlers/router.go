@@ -7,6 +7,7 @@ import (
 	"github.com/Fedorova199/GreenFox/internal/authenticator"
 	"github.com/Fedorova199/GreenFox/internal/models"
 	"github.com/Fedorova199/GreenFox/internal/storage"
+	"github.com/Fedorova199/GreenFox/internal/storage/logger"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -70,7 +71,7 @@ func (h *Handler) getAuthUser(r *http.Request) (models.User, error) {
 	if !ok {
 		return models.User{}, errors.New("unauthorized")
 	}
-
+	logger.Infof("authorized user: %v", login)
 	user, err := h.user.GetByLogin(r.Context(), login)
 	if err != nil {
 		return models.User{}, err

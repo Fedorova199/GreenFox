@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/Fedorova199/GreenFox/internal/models"
+	"github.com/Fedorova199/GreenFox/internal/storage/logger"
 )
 
 type Order interface {
@@ -35,6 +36,7 @@ func (r *OrderDB) GetByUserID(ctx context.Context, userID uint64) ([]models.Orde
 
 	rows, err := r.db.QueryContext(ctx, `SELECT id, number, status, accrual, uploaded_at, user_id FROM "order" WHERE user_id = $1`, userID)
 	if err != nil {
+		logger.Error("QueryContext:", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -61,7 +63,7 @@ func (r *OrderDB) GetByUserID(ctx context.Context, userID uint64) ([]models.Orde
 	sort.Slice(orders, func(i, j int) bool {
 		return orders[i].UploadedAt.Before(orders[j].UploadedAt)
 	})
-
+	logger.Infof("orders:%v", orders)
 	return orders, nil
 }
 
@@ -74,16 +76,23 @@ func (r *OrderDB) GetByNumber(ctx context.Context, number string) (models.Order,
 	if err != nil {
 		return models.Order{}, err
 	}
-
+	logger.Infof("order:%v", order)
 	return order, nil
 }
 
 func (r *OrderDB) UpdateAccrual(ctx context.Context, accrual models.Accrual) error {
 	tx, err := r.db.Begin()
 	if err != nil {
+
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err != nil {
+			logger.Warningf("transaction error: %v", err)
+			tx.Rollback()
+			return
+		}
+	}()
 
 	updateOrderStatement := `UPDATE "order" SET status = $1, accrual = $2 WHERE number = $3`
 	_, err = tx.ExecContext(ctx, updateOrderStatement, accrual.Status, accrual.Accrual, accrual.Order)
