@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/Fedorova199/GreenFox/internal/models"
+	"github.com/Fedorova199/GreenFox/internal/storage/logger"
 )
 
 type Order interface {
@@ -84,6 +85,7 @@ func (r *OrderDB) UpdateAccrual(ctx context.Context, accrual models.Accrual) err
 	}
 	defer func() {
 		if err != nil {
+			logger.Warningf("transaction error: %v", err)
 			tx.Rollback()
 			return
 		}
