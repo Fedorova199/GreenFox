@@ -34,22 +34,22 @@ func main() {
 	defer db.Close()
 
 	if err := db.Ping(); err != nil {
-		log.Fatalf("could not ping DB... %v", err)
+		logger.Fatalln("could not ping DB... %v", err)
 	}
 
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
-		log.Fatalf("could not start sql migration... %v", err)
+		logger.Fatalln("could not start sql migration... %v", err)
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(fmt.Sprintf("file://%s", cfg.MigrationDir), "product", driver)
 	if err != nil {
-		log.Fatalf("migration failed... %v", err)
+		logger.Fatalln("migration failed... %v", err)
 	}
 
 	fmt.Println(m.Version())
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Fatalf("An error occurred while syncing the database.. %v", err)
+		logger.Fatalln("An error occurred while syncing the database.. %v", err)
 	}
 
 	userRepository := storage.CreateUser(db)
