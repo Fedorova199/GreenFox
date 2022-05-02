@@ -111,6 +111,6 @@ WHERE "order".number = $2
 	if err != nil {
 		return err
 	}
-
+	logger.Info(tx.Commit())
 	return tx.Commit()
 }
